@@ -111,6 +111,26 @@ export async function changePassword(
   }
 }
 
+export async function deleteAccount(): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const data = await response.json();
+      return { success: false, error: data.detail || "Erreur" };
+    }
+    user.value = null;
+    return { success: true };
+  } catch {
+    return { success: false, error: "Erreur de connexion" };
+  }
+}
+
 // Initialiser l'utilisateur au chargement
 export async function initAuth() {
   await fetchCurrentUser();

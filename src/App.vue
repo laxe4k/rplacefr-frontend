@@ -6,7 +6,7 @@ import FooterBar from './components/FooterBar.vue'
 import { fetchConfig } from './stores/app'
 
 const route = useRoute()
-const showNav = computed(() => !route.path.startsWith('/login') && !route.path.startsWith('/admin'))
+const showNav = computed(() => !route.path.startsWith('/login') && !route.path.startsWith('/admin') && !route.path.startsWith('/register'))
 
 onMounted(() => {
   fetchConfig()

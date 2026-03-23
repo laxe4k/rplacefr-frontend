@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { user, logout, changePassword, isAuthenticated } from '../stores/auth'
+import { user, logout, changePassword, deleteAccount, isAuthenticated } from '../stores/auth'
 import {
   adminEvent,
   adminLinks,
@@ -14,6 +14,14 @@ import {
   fetchAdminStreamers,
   addAdminStreamer,
   deleteAdminStreamer,
+  pendingUsers,
+  fetchPendingUsers,
+  approveUser,
+  rejectUser,
+  totalUsers,
+  fetchTotalUsers,
+  allUsers,
+  fetchAllUsers,
 } from '../stores/admin'
 
 const router = useRouter()
@@ -30,13 +38,15 @@ const passwordMessage = ref<{ type: 'success' | 'error'; text: string } | null>(
 const saveMessage = ref<{ type: 'success' | 'error'; text: string } | null>(null)
 
 // Navigation
-const activeTab = ref<'dashboard' | 'links' | 'streamers' | 'account'>('dashboard')
+const activeTab = ref<'dashboard' | 'links' | 'streamers' | 'users' | 'users' | 'account'>('dashboard')
 const sidebarOpen = ref(false)
 
 // Stats
 const stats = computed(() => ({
   streamers: adminStreamers.value.length,
   links: Object.values(adminLinks.value).filter(Boolean).length,
+  pending: pendingUsers.value.length,
+  total: totalUsers.value,
 }))
 
 // Charger les données
@@ -45,7 +55,7 @@ onMounted(async () => {
     router.push('/login')
     return
   }
-  await Promise.all([fetchAdminEvent(), fetchAdminLinks(), fetchAdminStreamers()])
+  await Promise.all([fetchAdminEvent(), fetchAdminLinks(), fetchAdminStreamers(), fetchPendingUsers(), fetchTotalUsers(), fetchAllUsers()])
   linksForm.value = { ...adminLinks.value }
 })
 
@@ -81,6 +91,24 @@ const handleDeleteStreamer = async (name: string) => {
   }
 }
 
+const handleApproveUser = async (userId: number) => {
+  await approveUser(userId)
+}
+
+const handleRejectUser = async (userId: number, username: string) => {
+  if (confirm(`Rejeter et supprimer le compte de ${username} ?`)) {
+    await rejectUser(userId)
+  }
+}
+
+const handleDeleteAccount = async () => {
+  if (!confirm(`Supprimer définitivement le compte « ${user.value?.username} » ? Cette action est irréversible.`)) return
+  const result = await deleteAccount()
+  if (result.success) {
+    router.push('/login')
+  }
+}
+
 const handleChangePassword = async () => {
   passwordMessage.value = null
 
@@ -107,6 +135,7 @@ const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: 'fas fa-home' },
   { id: 'links', label: 'Liens', icon: 'fas fa-link' },
   { id: 'streamers', label: 'Streamers', icon: 'fab fa-twitch' },
+  { id: 'users', label: 'Utilisateurs', icon: 'fas fa-users' },
   { id: 'account', label: 'Compte', icon: 'fas fa-user' },
 ]
 </script>
@@ -199,6 +228,24 @@ const navItems = [
               <div class="stat-info">
                 <span class="stat-value">{{ stats.links }}/5</span>
                 <span class="stat-label">Liens configurés</span>
+              </div>
+            </div>
+            <div class="stat-card" :class="stats.pending > 0 ? 'warning' : 'success'">
+              <div class="stat-icon">
+                <i class="fas fa-user-clock"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-value">{{ stats.pending }}</span>
+                <span class="stat-label">Inscriptions en attente</span>
+              </div>
+            </div>
+            <div class="stat-card teal">
+              <div class="stat-icon">
+                <i class="fas fa-users"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-value">{{ stats.total }}</span>
+                <span class="stat-label">Utilisateurs</span>
               </div>
             </div>
           </div>
@@ -324,6 +371,64 @@ const navItems = [
           </div>
         </template>
 
+        <!-- Users -->
+        <template v-else-if="activeTab === 'users'">
+          <div class="card">
+            <div class="card-header">
+              <h2><i class="fas fa-user-clock"></i> Inscriptions en attente ({{ pendingUsers.length }})</h2>
+            </div>
+            <div class="card-body">
+              <div v-if="pendingUsers.length > 0" class="pending-list">
+                <div v-for="u in pendingUsers" :key="u.id" class="pending-row">
+                  <div class="pending-info">
+                    <i class="fas fa-user"></i>
+                    <div>
+                      <span class="pending-username">{{ u.username }}</span>
+                      <span class="pending-date">{{ new Date(u.created_at).toLocaleDateString('fr-FR') }}</span>
+                    </div>
+                  </div>
+                  <div class="pending-actions">
+                    <button @click="handleApproveUser(u.id)" class="approve-btn" title="Approuver">
+                      <i class="fas fa-check"></i> Approuver
+                    </button>
+                    <button @click="handleRejectUser(u.id, u.username)" class="reject-btn" title="Rejeter">
+                      <i class="fas fa-times"></i> Rejeter
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="empty-state">
+                <i class="fas fa-user-check"></i>
+                <p>Aucune inscription en attente</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Liste des utilisateurs -->
+          <div class="card">
+            <div class="card-header">
+              <h2><i class="fas fa-users"></i> Utilisateurs ({{ allUsers.length }})</h2>
+            </div>
+            <div class="card-body">
+              <div v-if="allUsers.length > 0" class="users-list">
+                <div v-for="u in allUsers" :key="u.id" class="user-row">
+                  <div class="user-info">
+                    <i class="fas fa-shield-alt"></i>
+                    <div>
+                      <span class="pending-username">{{ u.username }}</span>
+                      <span class="pending-date">Membre depuis {{ new Date(u.created_at).toLocaleDateString('fr-FR') }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="empty-state">
+                <i class="fas fa-users"></i>
+                <p>Aucun utilisateur</p>
+              </div>
+            </div>
+          </div>
+        </template>
+
         <!-- Account -->
         <template v-else-if="activeTab === 'account'">
           <div class="card">
@@ -373,6 +478,23 @@ const navItems = [
                   <i class="fas fa-lock"></i> Modifier
                 </button>
               </form>
+            </div>
+          </div>
+
+          <div class="card danger-zone">
+            <div class="card-header">
+              <h2><i class="fas fa-trash-alt"></i> Zone de danger</h2>
+            </div>
+            <div class="card-body">
+              <div class="danger-row">
+                <div>
+                  <strong>Supprimer mon compte</strong>
+                  <p>Cette action est irréversible. Le compte sera définitivement supprimé.</p>
+                </div>
+                <button @click="handleDeleteAccount" class="delete-account-btn">
+                  <i class="fas fa-trash-alt"></i> Supprimer mon compte
+                </button>
+              </div>
             </div>
           </div>
         </template>
@@ -565,7 +687,7 @@ const navItems = [
 /* Stats Grid */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: var(--space-4);
   margin-bottom: var(--space-6);
 }
@@ -594,6 +716,8 @@ const navItems = [
 .stat-card.danger .stat-icon { background: #fee2e2; color: #dc2626; }
 .stat-card.purple .stat-icon { background: #f3e8ff; color: #9333ea; }
 .stat-card.blue .stat-icon { background: #dbeafe; color: #2563eb; }
+.stat-card.warning .stat-icon { background: #fef9c3; color: #ca8a04; }
+.stat-card.teal .stat-icon { background: #ccfbf1; color: #0d9488; }
 
 .stat-value {
   display: block;
@@ -952,9 +1076,174 @@ const navItems = [
   max-width: 400px;
 }
 
+/* Users list (read-only) */
+.users-list {
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.user-row {
+  display: flex;
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.user-row:last-child {
+  border-bottom: none;
+}
+
+.user-row:hover {
+  background: var(--gray-50);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.user-info i {
+  color: var(--accent);
+}
+
+/* Danger Zone */
+.danger-zone .card-header h2 {
+  color: var(--danger);
+}
+
+.danger-zone .card-header h2 i {
+  color: var(--danger);
+}
+
+.danger-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.danger-row p {
+  margin: var(--space-1) 0 0;
+  font-size: 0.85rem;
+  color: var(--gray-500);
+}
+
+.delete-account-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 2px solid var(--danger);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--danger);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.delete-account-btn:hover {
+  background: var(--danger);
+  color: var(--white);
+}
+
+/* Pending Users */
+.pending-list {
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+}
+
+.pending-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--gray-100);
+  gap: var(--space-3);
+}
+
+.pending-row:last-child {
+  border-bottom: none;
+}
+
+.pending-row:hover {
+  background: var(--gray-50);
+}
+
+.pending-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.pending-info i {
+  color: var(--gray-400);
+}
+
+.pending-username {
+  display: block;
+  font-weight: 600;
+  color: var(--gray-800);
+}
+
+.pending-date {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--gray-400);
+}
+
+.pending-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.approve-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius);
+  background: #dcfce7;
+  color: #16a34a;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.approve-btn:hover {
+  background: #16a34a;
+  color: var(--white);
+}
+
+.reject-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-radius: var(--radius);
+  background: #fee2e2;
+  color: #dc2626;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.reject-btn:hover {
+  background: #dc2626;
+  color: var(--white);
+}
+
 /* Mobile */
-@media (max-width: 768px) {
-  .sidebar {
+@media (max-width: 768px) {  .sidebar {
     transform: translateX(-100%);
   }
 
@@ -987,7 +1276,7 @@ const navItems = [
   }
 
   .stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .event-control {

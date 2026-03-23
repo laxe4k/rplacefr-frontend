@@ -143,3 +143,71 @@ export async function deleteAdminStreamer(name: string) {
     adminLoading.value = false;
   }
 }
+
+// ==================== USERS ====================
+
+export interface PendingUser {
+  id: number;
+  username: string;
+  created_at: string;
+}
+
+export const pendingUsers = ref<PendingUser[]>([]);
+export const totalUsers = ref(0);
+export const allUsers = ref<{ id: number; username: string; created_at: string }[]>([]);
+
+export async function fetchPendingUsers() {
+  adminLoading.value = true;
+  try {
+    const data = await authFetch(`${API_BASE_URL}/api/admin/users/pending`);
+    pendingUsers.value = data.users;
+  } catch (error: unknown) {
+    adminError.value = error instanceof Error ? error.message : "Erreur";
+  } finally {
+    adminLoading.value = false;
+  }
+}
+
+export async function fetchTotalUsers() {
+  try {
+    const data = await authFetch(`${API_BASE_URL}/api/admin/users/count`);
+    totalUsers.value = data.count;
+  } catch {
+    // silencieux
+  }
+}
+
+export async function fetchAllUsers() {
+  try {
+    const data = await authFetch(`${API_BASE_URL}/api/admin/users/all`);
+    allUsers.value = data.users;
+  } catch {
+    // silencieux
+  }
+}
+
+export async function approveUser(userId: number) {
+  try {
+    await authFetch(`${API_BASE_URL}/api/admin/users/${userId}/approve`, {
+      method: "POST",
+    });
+    pendingUsers.value = pendingUsers.value.filter((u) => u.id !== userId);
+    return true;
+  } catch (error: unknown) {
+    adminError.value = error instanceof Error ? error.message : "Erreur";
+    return false;
+  }
+}
+
+export async function rejectUser(userId: number) {
+  try {
+    await authFetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
+      method: "DELETE",
+    });
+    pendingUsers.value = pendingUsers.value.filter((u) => u.id !== userId);
+    return true;
+  } catch (error: unknown) {
+    adminError.value = error instanceof Error ? error.message : "Erreur";
+    return false;
+  }
+}
