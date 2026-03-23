@@ -1,5 +1,8 @@
 # r/placeFR Frontend
 
+![GitHub Release](https://img.shields.io/github/v/release/laxe4k/rplacefr-frontend)
+![GitHub License](https://img.shields.io/github/license/laxe4k/rplacefr-frontend)
+
 Frontend pour le site r/placeFR, construit avec Vue 3 + TypeScript + Vite.
 
 ## Installation
