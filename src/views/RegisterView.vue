@@ -1,25 +1,58 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { login, authError, authLoading, isAuthenticated } from '../stores/auth'
+import { isAuthenticated } from '../stores/auth'
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 const router = useRouter()
 
-// Rediriger si déjà connecté
 if (isAuthenticated.value) {
   router.push('/admin')
 }
 
 const username = ref('')
 const password = ref('')
+const confirmPassword = ref('')
 const showPassword = ref(false)
+const loading = ref(false)
+const error = ref<string | null>(null)
+const success = ref(false)
 
-const isFormValid = computed(() => username.value.length > 0 && password.value.length > 0)
+const isFormValid = computed(
+  () =>
+    username.value.length >= 3 &&
+    password.value.length >= 6 &&
+    password.value === confirmPassword.value,
+)
 
 const handleSubmit = async () => {
-  const success = await login(username.value, password.value)
-  if (success) {
-    router.push('/admin')
+  error.value = null
+
+  if (password.value !== confirmPassword.value) {
+    error.value = 'Les mots de passe ne correspondent pas'
+    return
+  }
+
+  loading.value = true
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: username.value, password: password.value }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      error.value = data.detail || "Erreur lors de l'inscription"
+      return
+    }
+
+    success.value = true
+  } catch {
+    error.value = 'Erreur de connexion au serveur'
+  } finally {
+    loading.value = false
   }
 }
 </script>
@@ -31,16 +64,29 @@ const handleSubmit = async () => {
       <div class="bg-shape bg-shape-2"></div>
       <div class="bg-shape bg-shape-3"></div>
     </div>
-    
+
     <div class="login-container">
       <div class="login-card">
         <div class="login-header">
           <img src="/img/rplaceFR-Logo.webp" alt="r/placeFR" class="logo" />
-          <h1>Administration</h1>
-          <p class="subtitle">Connectez-vous pour accéder au panneau</p>
+          <h1>Inscription</h1>
+          <p class="subtitle">Créez un compte (validation requise par un admin)</p>
         </div>
 
-        <form @submit.prevent="handleSubmit" class="login-form">
+        <!-- Succès -->
+        <div v-if="success" class="success-box">
+          <i class="fas fa-check-circle"></i>
+          <div>
+            <strong>Demande envoyée !</strong>
+            <p>Votre compte est en attente de validation par un administrateur.</p>
+          </div>
+          <RouterLink to="/login" class="login-button" style="margin-top: 1rem; text-decoration: none; text-align: center; display: block;">
+            <i class="fas fa-sign-in-alt"></i> Retour à la connexion
+          </RouterLink>
+        </div>
+
+        <!-- Formulaire -->
+        <form v-else @submit.prevent="handleSubmit" class="login-form">
           <div class="form-group">
             <label for="username">
               <i class="fas fa-user"></i>
@@ -52,9 +98,10 @@ const handleSubmit = async () => {
                 id="username"
                 v-model="username"
                 required
+                minlength="3"
                 autocomplete="username"
-                :disabled="authLoading"
-                placeholder="Entrez votre nom d'utilisateur"
+                :disabled="loading"
+                placeholder="Minimum 3 caractères"
               />
             </div>
           </div>
@@ -70,51 +117,61 @@ const handleSubmit = async () => {
                 id="password"
                 v-model="password"
                 required
-                autocomplete="current-password"
-                :disabled="authLoading"
-                placeholder="Entrez votre mot de passe"
+                minlength="6"
+                autocomplete="new-password"
+                :disabled="loading"
+                placeholder="Minimum 6 caractères"
               />
-              <button 
-                type="button" 
+              <button
+                type="button"
                 class="password-toggle"
                 @click="showPassword = !showPassword"
-                :aria-label="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
+                :aria-label="showPassword ? 'Masquer' : 'Afficher'"
               >
                 <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
               </button>
             </div>
           </div>
 
-          <div v-if="authError" class="error-message">
-            <i class="fas fa-exclamation-circle"></i>
-            {{ authError }}
+          <div class="form-group">
+            <label for="confirm">
+              <i class="fas fa-lock"></i>
+              Confirmer le mot de passe
+            </label>
+            <div class="input-wrapper">
+              <input
+                type="password"
+                id="confirm"
+                v-model="confirmPassword"
+                required
+                autocomplete="new-password"
+                :disabled="loading"
+                placeholder="Répétez votre mot de passe"
+              />
+            </div>
           </div>
 
-          <button 
-            type="submit" 
-            :disabled="authLoading || !isFormValid" 
-            class="login-button"
-          >
-            <template v-if="authLoading">
+          <div v-if="error" class="error-message">
+            <i class="fas fa-exclamation-circle"></i>
+            {{ error }}
+          </div>
+
+          <button type="submit" :disabled="loading || !isFormValid" class="login-button">
+            <template v-if="loading">
               <i class="fas fa-circle-notch fa-spin"></i>
-              Connexion...
+              Envoi...
             </template>
             <template v-else>
-              <i class="fas fa-sign-in-alt"></i>
-              Se connecter
+              <i class="fas fa-user-plus"></i>
+              S'inscrire
             </template>
           </button>
         </form>
 
         <div class="back-link">
-          <RouterLink to="/">
+          <RouterLink to="/login">
             <i class="fas fa-arrow-left"></i>
-            Retour à l'accueil
-          </RouterLink>
-          <span class="separator">•</span>
-          <RouterLink to="/register">
-            <i class="fas fa-user-plus"></i>
-            S'inscrire
+            Retour à la connexion
           </RouterLink>
         </div>
       </div>
@@ -251,6 +308,7 @@ const handleSubmit = async () => {
   font-size: 1rem;
   transition: all var(--transition-fast);
   background: var(--gray-50);
+  box-sizing: border-box;
 }
 
 .form-group input:focus {
@@ -294,6 +352,28 @@ const handleSubmit = async () => {
   border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
+.success-box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  color: #16a34a;
+  padding: var(--space-5);
+  border-radius: var(--radius);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.success-box i {
+  font-size: 2rem;
+  text-align: center;
+}
+
+.success-box p {
+  margin: var(--space-1) 0 0;
+  font-size: 0.9rem;
+  color: var(--gray-600);
+}
+
 .login-button {
   display: flex;
   align-items: center;
@@ -325,15 +405,6 @@ const handleSubmit = async () => {
 .back-link {
   margin-top: var(--space-6);
   text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-3);
-  flex-wrap: wrap;
-}
-
-.separator {
-  color: var(--gray-300);
 }
 
 .back-link a {
@@ -347,15 +418,5 @@ const handleSubmit = async () => {
 
 .back-link a:hover {
   color: var(--accent);
-}
-
-@media (max-width: 480px) {
-  .login-card {
-    padding: var(--space-6);
-  }
-  
-  .login-header h1 {
-    font-size: 1.5rem;
-  }
 }
 </style>

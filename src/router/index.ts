@@ -3,6 +3,7 @@ import HomeView from "../views/HomeView.vue";
 import OrganisationView from "../views/OrganisationView.vue";
 import StreamersView from "../views/StreamersView.vue";
 import LoginView from "../views/LoginView.vue";
+import RegisterView from "../views/RegisterView.vue";
 import AdminView from "../views/AdminView.vue";
 import { isAuthenticated, isAdmin, initAuth } from "../stores/auth";
 
@@ -32,6 +33,12 @@ const router = createRouter({
       name: "login",
       component: LoginView,
       meta: { title: "Page de connexion" },
+    },
+    {
+      path: "/register",
+      name: "register",
+      component: RegisterView,
+      meta: { title: "Inscription" },
     },
     {
       path: "/admin",
