@@ -1,42 +1,35 @@
-# rplacefr-frontend
+# r/placeFR Frontend
 
-This template should help get you started developing with Vue 3 in Vite.
+Frontend pour le site r/placeFR, construit avec Vue 3 + TypeScript + Vite.
 
-## Recommended IDE Setup
+## Installation
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
-
-## Recommended Browser Setup
-
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
-
-## Type Support for `.vue` Imports in TS
-
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
-
-```sh
+```bash
+# Installer les dépendances
 npm install
 ```
 
-### Compile and Hot-Reload for Development
+## Configuration
 
-```sh
+Le frontend communique avec le backend FastAPI. Par défaut, il utilise `http://localhost:8000` en développement.
+
+## Lancement
+
+```bash
+# Mode développement avec hot-reload
 npm run dev
-```
 
-### Type-Check, Compile and Minify for Production
-
-```sh
+# Vérification des types et compilation pour la production
 npm run build
 ```
+
+## Structure du projet
+
+- `src/views/` - Pages de l'application (Home, Organisation, Streamers, Admin)
+- `src/components/` - Composants réutilisables (Header, Footer, Banner)
+- `src/stores/` - Stores Pinia (auth, config)
+- `src/router/` - Configuration des routes Vue Router
+
+## IDE recommandé
+
+[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar)
