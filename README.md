@@ -33,6 +33,17 @@ npm run build
 - `src/stores/` - Stores Pinia (auth, config)
 - `src/router/` - Configuration des routes Vue Router
 
+## Docker
+
+```bash
+# Avec docker-compose
+docker compose up -d
+
+# Ou manuellement
+docker build -t rplacefr-frontend .
+docker run -p 80:80 rplacefr-frontend
+```
+
 ## IDE recommandé
 
 [VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar)

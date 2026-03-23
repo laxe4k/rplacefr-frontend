@@ -1,0 +1,7 @@
+services:
+  frontend:
+    container_name: rplacefr-frontend
+    build: .
+    ports:
+      - "80:80"
+    restart: unless-stopped
