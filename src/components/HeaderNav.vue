@@ -46,10 +46,8 @@ onUnmounted(() => {
   </header>
   <nav :class="{ scrolled }">
     <div class="nav-container">
-      <button id="burger" @click="toggleMenu" :class="{ open: menuOpen }" aria-label="Menu">
-        <span></span>
-        <span></span>
-        <span></span>
+      <button id="burger" @click="toggleMenu" type="button" aria-label="Menu">
+        <i :class="menuOpen ? 'fas fa-times' : 'fas fa-bars'"></i>
       </button>
       <ul id="menu" :class="{ active: menuOpen }">
         <template v-if="eventActive">
@@ -261,33 +259,31 @@ nav ul li.social.reddit a:hover {
 /* Burger Menu */
 #burger {
   display: none;
-  flex-direction: column;
-  gap: 5px;
-  padding: var(--space-2);
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
   cursor: pointer;
   z-index: 1001;
+  border-radius: var(--radius-md);
+  background: none;
+  border: none;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: background var(--transition-fast);
 }
 
-#burger span {
-  width: 28px;
-  height: 3px;
-  background: var(--white);
-  border-radius: var(--radius-full);
-  transition: all var(--transition-base);
-  transform-origin: center;
+#burger:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
-#burger.open span:nth-child(1) {
-  transform: rotate(45deg) translate(6px, 6px);
-}
-
-#burger.open span:nth-child(2) {
-  opacity: 0;
-  transform: scaleX(0);
-}
-
-#burger.open span:nth-child(3) {
-  transform: rotate(-45deg) translate(6px, -6px);
+#burger i {
+  font-size: 1.4rem;
+  color: var(--white);
+  line-height: 1;
+  transition: transform var(--transition-fast);
 }
 
 /* Mobile Styles */
@@ -306,7 +302,7 @@ nav ul li.social.reddit a:hover {
   }
 
   .nav-container {
-    justify-content: flex-start;
+    justify-content: center;
   }
 
   #menu {
