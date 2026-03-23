@@ -1,7 +1,10 @@
 services:
   frontend:
     container_name: rplacefr-frontend
-    build: .
+    build:
+      context: .
+      args:
+        - VITE_API_URL=${VITE_API_URL}
     expose:
       - "80"
     restart: unless-stopped
