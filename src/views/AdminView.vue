@@ -50,8 +50,8 @@ onMounted(async () => {
 })
 
 // Actions
-const handleLogout = () => {
-  logout()
+const handleLogout = async () => {
+  await logout()
   router.push('/login')
 }
 
